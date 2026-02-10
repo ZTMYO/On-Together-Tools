@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>OT 富文本编辑器</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 24px 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #f8f2ec;
+            color: #6a4d53;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 22px;
+            margin: 0 0 10px 0;
+            text-align: center;
+            letter-spacing: 0.04em;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 880px;
+            margin: 0 auto;
+        }
+
+        .editor-panel,
+        .raw-panel {
+            background: #eddecd;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+            padding: 10px 14px 10px;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #6a4d53;
+        }
+
+        .toolbar {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .toolbar label {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .toolbar input[type="color"] {
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            border: 2px solid rgba(106, 77, 83, 0.55);
+            border-radius: 50%;
+            background: #fefaf4;
+            cursor: pointer;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
+            overflow: hidden;
+        }
+
+        .toolbar input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .toolbar input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+
+        .toolbar input[type="color"]:hover {
+            border-color: rgba(106, 77, 83, 0.85);
+            box-shadow: 0 0 0 2px rgba(237, 222, 205, 0.9);
+        }
+
+        /* 渐变模态框中的颜色选择器也使用圆形样式 */
+        #gradientModal input[type="color"] {
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            border: 2px solid rgba(106, 77, 83, 0.55);
+            border-radius: 50%;
+            background: #fefaf4;
+            cursor: pointer;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
+            overflow: hidden;
+        }
+
+        #gradientModal input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        #gradientModal input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+
+        .btn {
+            border: 1px solid rgba(106, 77, 83, 0.5);
+            background: rgba(106, 77, 83, 0.06);
+            color: #6a4d53;
+            border-radius: 999px;
+            padding: 4px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            line-height: 1.4;
+            transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease;
+        }
+
+        .btn:hover {
+            background: rgba(106, 77, 83, 0.12);
+            border-color: rgba(106, 77, 83, 0.7);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+        }
+
+        .btn-primary {
+            border-color: #6a4d53;
+            background: #6a4d53;
+            color: #f8f2ec;
+        }
+
+        .btn-primary:hover {
+            background: #5a4046;
+            border-color: #5a4046;
+        }
+
+        #richEditor {
+            min-height: 130px;
+            max-height: 260px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(106, 77, 83, 0.25);
+            padding: 8px 10px;
+            background: #eddecd;
+            font-size: 15px;
+            line-height: 1.6;
+            outline: none;
+            color: #6a4d53;
+        }
+
+        #rawText {
+            width: 100%;
+            min-height: 110px;
+            max-height: 240px;
+            border-radius: 8px;
+            border: 1px solid rgba(106, 77, 83, 0.25);
+            padding: 8px 10px;
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            resize: vertical;
+            box-sizing: border-box;
+            background: #eddecd;
+            color: #6a4d53;
+        }
+
+        #rawText:focus {
+            outline: none;
+            box-shadow: none;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: rgba(106, 77, 83, 0.7);
+            margin-top: 4px;
+        }
+
+        .section-label {
+            font-size: 13px;
+            color: rgba(106, 77, 83, 0.9);
+        }
+
+        .row-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .modal-mask {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-box {
+            background: #f8f2ec;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            padding: 14px 16px 12px;
+            min-width: 260px;
+            max-width: 320px;
+            color: #6a4d53;
+        }
+
+        .modal-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .modal-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .modal-row label {
+            font-size: 13px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        /* 统一选中高亮样式：黑色半透明背景，保留文字本身颜色 */
+        ::selection {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        #richEditor *::selection,
+        #richEditor::selection {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 16px 10px;
+            }
+
+            .container {
+                max-width: 100%;
+            }
+
+            #richEditor,
+            #rawText {
+                min-height: 100px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>On-Together 富文本编辑器</h1>
+
+        <div class="editor-panel">
+            <div class="panel-header">
+                <div class="panel-title">富文本编辑区</div>
+                <div class="toolbar">
+                    <label>
+                        <span>颜色：</span>
+                        <input id="colorPicker" type="color" value="#ff00ff" />
+                    </label>
+                    <button id="gradientBtn" class="btn">渐变</button>
+                    <button id="undoBtn" class="btn">撤销</button>
+                    <button id="redoBtn" class="btn">重做</button>
+                </div>
+            </div>
+
+            <div id="richEditor" contenteditable="true" spellcheck="false"></div>
+            <div class="hint">
+                在此输入文字，选中一个字或多字，选择颜色/渐变后会实时应用到选中文本。下方 RAW 需要点击“刷新 RAW”手动同步。
+            </div>
+        </div>
+
+        <div class="raw-panel">
+            <div class="panel-header row-between">
+                <div class="panel-title">RAW 文本</div>
+                <div class="toolbar">
+                    <span class="section-label">格式示例：</span>
+                    <code style="font-size:12px;">&lt;#FF00FF&gt;字&lt;/color&gt;</code>
+                </div>
+            </div>
+
+            <div id="rawText" contenteditable="true"></div>
+
+            <div class="row-between" style="margin-top: 6px;">
+                <div class="hint">
+                    编辑此处 RAW 文本，点击右侧“从 RAW 更新富文本”可反向更新上方内容。
+                </div>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <button id="applyRawBtn" class="btn btn-primary">从 RAW 更新富文本</button>
+                    <button id="refreshRawBtn" class="btn">刷新 RAW</button>
+                    <button id="copyRawBtn" class="btn"> 复制 </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 渐变颜色设置模态框 -->
+    <div id="gradientModal" class="modal-mask">
+        <div class="modal-box">
+            <div class="modal-title">字符渐变颜色</div>
+            <div class="modal-row">
+                <label for="gradientLeftColor">左侧颜色</label>
+                <input id="gradientLeftColor" type="color" value="#ff0000" />
+            </div>
+            <div class="modal-row">
+                <label for="gradientRightColor">右侧颜色</label>
+                <input id="gradientRightColor" type="color" value="#0000ff" />
+            </div>
+            <div class="modal-actions">
+                <button id="gradientCancel" class="btn">取消</button>
+                <button id="gradientRainbow" class="btn">彩虹</button>
+                <button id="gradientApply" class="btn btn-primary">应用渐变</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // 将 rgb/rgba 颜色转换为 #RRGGBB
+        function rgbToHex(color) {
+            if (!color) return '#000000';
+            color = color.trim();
+
+            if (color[0] === '#') {
+                if (color.length === 4) {
+                    var r = color[1];
+                    var g = color[2];
+                    var b = color[3];
+                    return ('#' + r + r + g + g + b + b).toUpperCase();
+                }
+                return color.substring(0, 7).toUpperCase();
+            }
+
+            var match = color.match(/rgba?\s*\(([^)]+)\)/i);
+            if (!match) return '#000000';
+
+            var parts = match[1].split(',').map(function (p) {
+                return parseInt(p.trim(), 10) || 0;
+            });
+
+            var rVal = Math.max(0, Math.min(255, parts[0] || 0));
+            var gVal = Math.max(0, Math.min(255, parts[1] || 0));
+            var bVal = Math.max(0, Math.min(255, parts[2] || 0));
+
+            function toHex(v) {
+                var h = v.toString(16).toUpperCase();
+                return h.length === 1 ? '0' + h : h;
+            }
+
+            return '#' + toHex(rVal) + toHex(gVal) + toHex(bVal);
+        }
+
+        // 遍历富文本，生成 RAW 字符串（格式：<#HEX>字</color>）
+        function editorToRaw() {
+            var editor = document.getElementById('richEditor');
+            var walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null);
+
+            var result = '';
+            var currentColor = null;
+            var buffer = '';
+
+            function flushBuffer() {
+                if (!buffer) return;
+                if (currentColor === null) {
+                    result += buffer;
+                } else {
+                    result += '<' + currentColor + '>' + buffer + '</color>';
+                }
+                buffer = '';
+            }
+
+            while (walker.nextNode()) {
+                var node = walker.currentNode;
+                if (!node.nodeValue) continue;
+
+                var parentEl = node.parentElement;
+                var color = null;
+                if (parentEl) {
+                    var styleColor = window.getComputedStyle(parentEl).color;
+                    var hex = rgbToHex(styleColor);
+                    if (hex === '#000000') {
+                        color = null;
+                    } else {
+                        color = hex;
+                    }
+                }
+
+                if (color !== currentColor) {
+                    flushBuffer();
+                    currentColor = color;
+                }
+
+                buffer += node.nodeValue;
+            }
+
+            flushBuffer();
+            return result;
+        }
+
+        // 解析 RAW 字符串，渲染到富文本编辑器（支持格式：<#HEX>字</color>）
+        function rawToEditor(raw) {
+            var editor = document.getElementById('richEditor');
+            editor.innerHTML = '';
+
+            if (!raw) return;
+
+            var i = 0;
+            var len = raw.length;
+
+            function appendText(text, color) {
+                if (!text) return;
+                if (color) {
+                    var span = document.createElement('span');
+                    span.textContent = text;
+                    span.style.color = color;
+                    editor.appendChild(span);
+                } else {
+                    editor.appendChild(document.createTextNode(text));
+                }
+            }
+
+            while (i < len) {
+                var idx = raw.indexOf('<#', i);
+                if (idx === -1) {
+                    appendText(raw.substring(i), null);
+                    break;
+                }
+
+                if (idx > i) {
+                    appendText(raw.substring(i, idx), null);
+                }
+
+                // 颜色格式：<#RRGGBB>
+                var start = idx + 1; // 指向 '#' 位置
+                var colorEnd = raw.indexOf('>', start);
+                if (colorEnd === -1) {
+                    appendText(raw.substring(idx), null);
+                    break;
+                }
+
+                var colorSpec = raw.substring(start, colorEnd).trim();
+                var colorHex = colorSpec;
+
+                if (!/^#[0-9a-fA-F]{6}$/.test(colorHex)) {
+                    appendText(raw.substring(idx, colorEnd + 1), null);
+                    i = colorEnd + 1;
+                    continue;
+                }
+
+                var closeTag = '</color>';
+                var closeIdx = raw.indexOf(closeTag, colorEnd + 1);
+                if (closeIdx === -1) {
+                    var textRest = raw.substring(colorEnd + 1);
+                    appendText(textRest, colorHex.toUpperCase());
+                    break;
+                }
+
+                var textContent = raw.substring(colorEnd + 1, closeIdx);
+                appendText(textContent, colorHex.toUpperCase());
+
+                i = closeIdx + closeTag.length;
+            }
+        }
+
+        function applyColorToSelection(color) {
+            var selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) return;
+
+            var range = selection.getRangeAt(0);
+            var editor = document.getElementById('richEditor');
+
+            if (!editor.contains(range.commonAncestorContainer) || range.collapsed) {
+                return;
+            }
+
+            if (range.collapsed) {
+                return;
+            }
+
+            var text = range.toString();
+            var span = document.createElement('span');
+            span.style.color = color;
+            span.textContent = text;
+
+            range.deleteContents();
+            range.insertNode(span);
+
+            selection.removeAllRanges();
+            var newRange = document.createRange();
+            newRange.selectNodeContents(span);
+            selection.addRange(newRange);
+        }
+
+
+        var gradientRange = null;
+
+        function hexToRgb(hex) {
+            if (!hex) return { r: 0, g: 0, b: 0 };
+            hex = hex.replace('#', '');
+            if (hex.length === 3) {
+                hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+            }
+            var num = parseInt(hex, 16) || 0;
+            return {
+                r: (num >> 16) & 255,
+                g: (num >> 8) & 255,
+                b: num & 255
+            };
+        }
+
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function rgbToHexFromParts(r, g, b) {
+            function toHex(v) {
+                var h = Math.round(v).toString(16).toUpperCase();
+                return h.length === 1 ? '0' + h : h;
+            }
+            return '#' + toHex(r) + toHex(g) + toHex(b);
+        }
+
+        function applyGradientToSelection(leftColor, rightColor) {
+            var editor = document.getElementById('richEditor');
+            if (!editor || !gradientRange) return;
+
+            var range = gradientRange;
+            if (!editor.contains(range.commonAncestorContainer) || range.collapsed) {
+                return;
+            }
+
+            var text = range.toString();
+            if (!text) return;
+
+            var chars = Array.from(text);
+            var len = chars.length;
+            if (len === 0) return;
+
+            var left = hexToRgb(leftColor);
+            var right = hexToRgb(rightColor);
+
+            var container = document.createElement('span');
+
+            for (var i = 0; i < len; i++) {
+                var ch = chars[i];
+                var t = len === 1 ? 0 : i / (len - 1);
+                var r = lerp(left.r, right.r, t);
+                var g = lerp(left.g, right.g, t);
+                var b = lerp(left.b, right.b, t);
+                var span = document.createElement('span');
+                span.style.color = rgbToHexFromParts(r, g, b);
+                span.textContent = ch;
+                container.appendChild(span);
+            }
+
+            range.deleteContents();
+            range.insertNode(container);
+
+            var selection = window.getSelection();
+            selection.removeAllRanges();
+            var newRange = document.createRange();
+            newRange.selectNodeContents(container);
+            selection.addRange(newRange);
+        }
+
+        function applyRainbowToSelection() {
+            var editor = document.getElementById('richEditor');
+            if (!editor || !gradientRange) return;
+
+            var range = gradientRange;
+            if (!editor.contains(range.commonAncestorContainer) || range.collapsed) {
+                return;
+            }
+
+            var text = range.toString();
+            if (!text) return;
+
+            var chars = Array.from(text);
+            var len = chars.length;
+            if (len === 0) return;
+
+            // 红、橙、黄、绿、青、蓝、紫
+            var stops = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#00FFFF', '#0000FF', '#8B00FF'];
+            var container = document.createElement('span');
+
+            for (var i = 0; i < len; i++) {
+                var ch = chars[i];
+                var t = len === 1 ? 0 : i / (len - 1); // 0~1
+                var segCount = stops.length - 1;
+                var segPos = t * segCount;
+                var segIndex = Math.min(segCount - 1, Math.floor(segPos));
+                var localT = segPos - segIndex;
+
+                var c1 = hexToRgb(stops[segIndex]);
+                var c2 = hexToRgb(stops[segIndex + 1]);
+
+                var r = lerp(c1.r, c2.r, localT);
+                var g = lerp(c1.g, c2.g, localT);
+                var b = lerp(c1.b, c2.b, localT);
+
+                var span = document.createElement('span');
+                span.style.color = rgbToHexFromParts(r, g, b);
+                span.textContent = ch;
+                container.appendChild(span);
+            }
+
+            range.deleteContents();
+            range.insertNode(container);
+
+            var selection = window.getSelection();
+            selection.removeAllRanges();
+            var newRange = document.createRange();
+            newRange.selectNodeContents(container);
+            selection.addRange(newRange);
+        }
+
+        var historyStack = [];
+        var historyIndex = -1;
+
+        function captureSnapshot() {
+            var editor = document.getElementById('richEditor');
+            if (!editor) return;
+
+            var snapshot = {
+                html: editor.innerHTML
+            };
+
+            if (historyIndex >= 0) {
+                var current = historyStack[historyIndex];
+                if (current && current.html === snapshot.html) {
+                    return;
+                }
+            }
+
+            historyStack = historyStack.slice(0, historyIndex + 1);
+            historyStack.push(snapshot);
+            historyIndex = historyStack.length - 1;
+        }
+
+        function restoreSnapshot(targetIndex) {
+            if (targetIndex < 0 || targetIndex >= historyStack.length) return;
+            var snap = historyStack[targetIndex];
+            var editor = document.getElementById('richEditor');
+            if (!editor) return;
+            editor.innerHTML = snap.html;
+            historyIndex = targetIndex;
+            syncEditorToRaw();
+        }
+
+        function syncEditorToRaw() {
+            var raw = editorToRaw();
+            var rawArea = document.getElementById('rawText');
+            if (rawArea) {
+                rawArea.textContent = raw;
+            }
+        }
+
+        function init() {
+            var editor = document.getElementById('richEditor');
+            var rawArea = document.getElementById('rawText');
+            var colorPicker = document.getElementById('colorPicker');
+            var applyRawBtn = document.getElementById('applyRawBtn');
+            var refreshRawBtn = document.getElementById('refreshRawBtn');
+            var undoBtn = document.getElementById('undoBtn');
+            var redoBtn = document.getElementById('redoBtn');
+
+            var copyRawBtn = document.getElementById('copyRawBtn');
+
+            var gradientBtn = document.getElementById('gradientBtn');
+            var gradientModal = document.getElementById('gradientModal');
+            var gradientLeftColor = document.getElementById('gradientLeftColor');
+            var gradientRightColor = document.getElementById('gradientRightColor');
+            var gradientApply = document.getElementById('gradientApply');
+            var gradientCancel = document.getElementById('gradientCancel');
+            var gradientRainbow = document.getElementById('gradientRainbow');
+
+            var initialRaw =
+                '<#FF00FF>❀</color>' +
+                '<#FF0066>8</color>' +
+                '<#FF3300>8</color>' +
+                '<#FF7A00>8</color>' +
+                '<#FFC400>8</color>' +
+                '<#D4FF00>大</color>' +
+                '<#66FF00>展</color>' +
+                '<#00FF66>宏</color>' +
+                '<#00FFD5>图</color>' +
+                '<#00D5FF>V</color>' +
+                '<#0091FF>I</color>' +
+                '<#4D5BFF>P</color>' +
+                '<#8A3DFF>靓</color>' +
+                '<#C000FF>K</color>' +
+                '<#FF00C8>大</color>' +
+                '<#FF007A>包</color>' +
+                '<#FF00FF>❀</color>';
+
+            if (rawArea) {
+                rawArea.textContent = initialRaw;
+            }
+            rawToEditor(initialRaw);
+            captureSnapshot();
+
+            if (editor) {
+                editor.addEventListener('input', function () {
+                    captureSnapshot();
+                });
+            }
+
+            if (colorPicker) {
+                colorPicker.addEventListener('input', function () {
+                    var color = colorPicker.value || '#000000';
+                    applyColorToSelection(color);
+                    captureSnapshot();
+                });
+            }
+
+            if (applyRawBtn) {
+                applyRawBtn.addEventListener('click', function () {
+                    var raw = rawArea ? rawArea.textContent || '' : '';
+                    rawToEditor(raw);
+                    captureSnapshot();
+                });
+            }
+
+            if (refreshRawBtn) {
+                refreshRawBtn.addEventListener('click', function () {
+                    syncEditorToRaw();
+                    captureSnapshot();
+                });
+            }
+
+            if (copyRawBtn) {
+                copyRawBtn.addEventListener('click', function () {
+                    var area = document.getElementById('rawText');
+                    if (!area) return;
+                    var text = area.textContent || '';
+
+                    var originalText = copyRawBtn.textContent;
+                    copyRawBtn.textContent = '已复制';
+                    copyRawBtn.disabled = true;
+
+                    function restoreCopyButton() {
+                        copyRawBtn.textContent = originalText;
+                        copyRawBtn.disabled = false;
+                    }
+
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).catch(function () { }).finally(function () {
+                            setTimeout(restoreCopyButton, 1000);
+                        });
+                    } else {
+                        var range = document.createRange();
+                        range.selectNodeContents(area);
+                        var sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                        try {
+                            document.execCommand('copy');
+                        } catch (e) { }
+                        sel.removeAllRanges();
+                        setTimeout(restoreCopyButton, 1000);
+                    }
+                });
+            }
+
+            if (undoBtn) {
+                undoBtn.addEventListener('click', function () {
+                    if (historyIndex > 0) {
+                        restoreSnapshot(historyIndex - 1);
+                    }
+                });
+            }
+
+            if (redoBtn) {
+                redoBtn.addEventListener('click', function () {
+                    if (historyIndex >= 0 && historyIndex < historyStack.length - 1) {
+                        restoreSnapshot(historyIndex + 1);
+                    }
+                });
+            }
+
+            if (gradientBtn && gradientModal) {
+                gradientBtn.addEventListener('click', function () {
+                    var sel = window.getSelection();
+                    if (!sel || sel.rangeCount === 0) {
+                        alert('请先在上方富文本中选中一段文字，再使用渐变。');
+                        return;
+                    }
+                    var range = sel.getRangeAt(0);
+                    if (!editor || !editor.contains(range.commonAncestorContainer) || range.collapsed) {
+                        alert('请先在上方富文本中选中一段文字，再使用渐变。');
+                        return;
+                    }
+                    gradientRange = range.cloneRange();
+                    gradientModal.style.display = 'flex';
+                });
+            }
+
+            function closeGradientModal() {
+                if (gradientModal) {
+                    gradientModal.style.display = 'none';
+                }
+            }
+
+            if (gradientCancel) {
+                gradientCancel.addEventListener('click', function () {
+                    closeGradientModal();
+                });
+            }
+
+            if (gradientApply) {
+                gradientApply.addEventListener('click', function () {
+                    if (!gradientRange) {
+                        closeGradientModal();
+                        return;
+                    }
+                    var left = gradientLeftColor ? gradientLeftColor.value || '#ff0000' : '#ff0000';
+                    var right = gradientRightColor ? gradientRightColor.value || '#0000ff' : '#0000ff';
+                    applyGradientToSelection(left, right);
+                    captureSnapshot();
+                    closeGradientModal();
+                });
+            }
+
+            if (gradientRainbow) {
+                gradientRainbow.addEventListener('click', function () {
+                    if (!gradientRange) {
+                        closeGradientModal();
+                        return;
+                    }
+                    if (gradientLeftColor) {
+                        gradientLeftColor.value = '#FF0000';
+                    }
+                    if (gradientRightColor) {
+                        gradientRightColor.value = '#8B00FF';
+                    }
+                    applyRainbowToSelection();
+                    captureSnapshot();
+                    closeGradientModal();
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
