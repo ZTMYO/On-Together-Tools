@@ -37,6 +37,14 @@
             padding: 10px 14px 10px;
         }
 
+        .preview-panel,
+        .file-panel {
+            background: #eddecd;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+            padding: 10px 14px 10px;
+        }
+
         .panel-header {
             display: flex;
             align-items: center;
@@ -206,6 +214,73 @@
             flex-wrap: wrap;
         }
 
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .chat-preview {
+            border-radius: 10px;
+            border: 1px solid rgba(106, 77, 83, 0.18);
+            padding: 10px 12px;
+            font-size: 14px;
+            line-height: 1.6;
+            background: #2a2c33;
+            color: #ffffff;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(106, 77, 83, 0.5);
+            background: rgba(106, 77, 83, 0.06);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle input {
+            margin: 0;
+        }
+
+        .drop-zone {
+            border: 2px dashed rgba(106, 77, 83, 0.35);
+            border-radius: 12px;
+            padding: 14px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .drop-zone.dragover {
+            border-color: rgba(106, 77, 83, 0.9);
+            background: rgba(106, 77, 83, 0.08);
+        }
+
+        .mono-box {
+            width: 100%;
+            min-height: 70px;
+            max-height: 220px;
+            border-radius: 8px;
+            border: 1px solid rgba(106, 77, 83, 0.25);
+            padding: 8px 10px;
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            overflow: auto;
+            box-sizing: border-box;
+            background: #eddecd;
+            color: #6a4d53;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
         .modal-mask {
             position: fixed;
             inset: 0;
@@ -261,6 +336,32 @@
             background: rgba(0, 0, 0, 0.2);
         }
 
+        .bg-selector {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+
+        .bg-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.12s ease, border-color 0.12s ease;
+        }
+
+        .bg-dot:hover {
+            border-color: rgba(255, 255, 255, 0.45);
+        }
+
+        .bg-dot.active {
+            border-color: rgba(255, 255, 255, 0.9);
+            transform: scale(1.08);
+        }
+
         @media (max-width: 640px) {
             body {
                 padding: 16px 10px;
@@ -273,6 +374,10 @@
             #richEditor,
             #rawText {
                 min-height: 100px;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -324,7 +429,76 @@
                 </div>
             </div>
         </div>
+
+        <div class="grid-2">
+            <div class="preview-panel">
+                <div class="panel-header">
+                    <div class="panel-title">聊天预览（TMP 风格）</div>
+                    <div class="toolbar">
+                        <label>
+                            <span>冒号：</span>
+                            <input id="colonColor" type="color" value="#ffffff" />
+                        </label>
+                        <label>
+                            <span>消息：</span>
+                            <input id="messageColor" type="color" value="#ffffff" />
+                        </label>
+                        <label class="toggle">
+                            <input id="chatBold" type="checkbox" />
+                            <span>粗体</span>
+                        </label>
+                        <label class="toggle">
+                            <input id="chatItalic" type="checkbox" />
+                            <span>斜体</span>
+                        </label>
+                    </div>
+                </div>
+                <div id="chatPreview" class="chat-preview"></div>
+                <div class="bg-selector">
+                    <span class="hint" style="margin:0;">预览背景：</span>
+                    <button class="bg-dot" type="button" data-bg="default" title="默认"
+                        style="background:#8B5C7B"></button>
+                    <button class="bg-dot" type="button" data-bg="grass" title="草地" style="background:#B9A558"></button>
+                    <button class="bg-dot" type="button" data-bg="road" title="道路" style="background:#B59A91"></button>
+                    <button class="bg-dot" type="button" data-bg="water" title="水面" style="background:#BCDEE8"></button>
+                    <button class="bg-dot" type="button" data-bg="wood" title="木头" style="background:#FEAA82"></button>
+                </div>
+                <div class="hint">
+                    该预览用于模拟游戏聊天中的“名字: 消息”。下方 TMP 输出可直接用于 PlayerData.txt 的 Name 字段。
+                </div>
+                <div class="row-between" style="margin-top: 8px;">
+                    <div class="panel-title">TMP 输出</div>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <button id="copyTmpBtn" class="btn">复制 TMP</button>
+                    </div>
+                </div>
+                <div id="tmpOutput" class="mono-box" contenteditable="true"></div>
+            </div>
+
+            <div class="file-panel">
+                <div class="panel-header">
+                    <div class="panel-title">PlayerData.txt 自动应用</div>
+                    <div class="toolbar">
+                        <button id="resetFileBtn" class="btn">重置</button>
+                    </div>
+                </div>
+                <div id="dropZone" class="drop-zone">
+                    <div style="font-weight:600; font-size:13px;">拖拽或点击选择 PlayerData.txt</div>
+                    <div class="hint" style="margin-top:6px;">加载后会回填你原来的名字到编辑器，并可一键下载替换后的文件。</div>
+                </div>
+                <input id="playerFileInput" type="file" accept=".txt" style="display:none" />
+                <div id="fileInfo" class="hint" style="margin-top:8px; display:none;"></div>
+                <div id="fileError" class="hint" style="margin-top:8px; display:none; color:#8a2c3a;"></div>
+                <div class="row-between" style="margin-top: 10px;">
+                    <div class="hint" id="oldNameHint" style="display:none;"></div>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <button id="downloadFileBtn" class="btn btn-primary" disabled>下载已修改文件</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
     <!-- 渐变颜色设置模态框 -->
     <div id="gradientModal" class="modal-mask">
         <div class="modal-box">
@@ -491,6 +665,189 @@
             }
         }
 
+        function escapeForTmp(text) {
+            if (text === null || text === undefined) return '';
+            return String(text).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function rawToTmp(raw, options) {
+            options = options || {};
+            var colonColour = options.colonColour || null;
+            var messageColour = options.messageColour || null;
+            var chatBold = !!options.chatBold;
+            var chatItalic = !!options.chatItalic;
+            var enableExtras = options.enableExtras !== false;
+
+            if (!raw || !raw.trim()) return '';
+
+            var parts = [];
+            parts.push('</color>');
+
+            var i = 0;
+            var len = raw.length;
+            while (i < len) {
+                var idx = raw.indexOf('<#', i);
+                if (idx === -1) {
+                    var tail = raw.substring(i);
+                    if (tail) {
+                        parts.push('<color=#FFFFFF>' + escapeForTmp(tail) + '</color>');
+                    }
+                    break;
+                }
+                if (idx > i) {
+                    var plain = raw.substring(i, idx);
+                    if (plain) {
+                        parts.push('<color=#FFFFFF>' + escapeForTmp(plain) + '</color>');
+                    }
+                }
+
+                var start = idx + 1;
+                var colorEnd = raw.indexOf('>', start);
+                if (colorEnd === -1) {
+                    var rest = raw.substring(idx);
+                    parts.push('<color=#FFFFFF>' + escapeForTmp(rest) + '</color>');
+                    break;
+                }
+                var colorSpec = raw.substring(start, colorEnd).trim();
+                if (!/^#[0-9a-fA-F]{6}$/.test(colorSpec)) {
+                    parts.push('<color=#FFFFFF>' + escapeForTmp(raw.substring(idx, colorEnd + 1)) + '</color>');
+                    i = colorEnd + 1;
+                    continue;
+                }
+
+                var closeTag = '</color>';
+                var closeIdx = raw.indexOf(closeTag, colorEnd + 1);
+                if (closeIdx === -1) {
+                    var textRest = raw.substring(colorEnd + 1);
+                    if (textRest) {
+                        parts.push('<color=' + colorSpec.toUpperCase() + '>' + escapeForTmp(textRest) + '</color>');
+                    }
+                    break;
+                }
+
+                var textContent = raw.substring(colorEnd + 1, closeIdx);
+                parts.push('<color=' + colorSpec.toUpperCase() + '>' + escapeForTmp(textContent) + '</color>');
+
+                i = closeIdx + closeTag.length;
+            }
+
+            if (enableExtras) {
+                if (messageColour) {
+                    parts.push('<color=' + String(messageColour).toUpperCase() + '>');
+                }
+                if (colonColour) {
+                    parts.push('<color=' + String(colonColour).toUpperCase() + '>');
+                }
+                if (chatBold) parts.push('<b>');
+                if (chatItalic) parts.push('<i>');
+            }
+
+            return parts.join('');
+        }
+
+        function parseTmpNameToRaw(tmp) {
+            if (!tmp || !tmp.trim()) return null;
+            var s = tmp;
+            if (s.indexOf('</color>') === 0) {
+                s = s.substring('</color>'.length);
+            }
+
+            var hexColour = '#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?';
+            var closedTagRegex = new RegExp('<color=(' + hexColour + ')>([\\s\\S]*?)</color>', 'gi');
+            var m;
+            var letters = [];
+            var consumed = [];
+            while ((m = closedTagRegex.exec(s)) !== null) {
+                var colour = m[1];
+                var text = m[2];
+                text = text.replace(/<\/?b>/gi, '').replace(/<\/?i>/gi, '');
+                for (var k = 0; k < text.length; k++) {
+                    letters.push({ char: text[k], colour: colour.toUpperCase() });
+                }
+                consumed.push({ start: m.index, end: m.index + m[0].length });
+            }
+
+            if (letters.length === 0) return null;
+            var raw = '';
+            for (var j = 0; j < letters.length; j++) {
+                raw += '<' + letters[j].colour + '>' + letters[j].char + '</color>';
+            }
+            return raw;
+        }
+
+        function extractNameFromPlayerData(fileContent) {
+            var match = fileContent.match(/"Name"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+            if (!match) return null;
+            return match[1].replace(/\\(.)/g, '$1');
+        }
+
+        function replaceNameInPlayerData(fileContent, newName) {
+            var escaped = String(newName).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+            var regex = /"Name"\s*:\s*"(?:[^"\\]|\\.)*"/;
+            if (!regex.test(fileContent)) return null;
+            return fileContent.replace(regex, '"Name":"' + escaped + '"');
+        }
+
+        function renderChatPreview() {
+            var preview = document.getElementById('chatPreview');
+            var tmpOutput = document.getElementById('tmpOutput');
+            if (!preview || !tmpOutput) return;
+
+            var bgColours = {
+                'default': '#8B5C7B',
+                'grass': '#B9A558',
+                'road': '#B59A91',
+                'water': '#BCDEE8',
+                'wood': '#FEAA82'
+            };
+            var bg = 'default';
+            try {
+                bg = localStorage.getItem('ot_preview_bg') || 'default';
+            } catch (e) { }
+            preview.style.backgroundColor = bgColours[bg] || bgColours['default'];
+
+            var raw = editorToRaw();
+
+            var colonColourInput = document.getElementById('colonColor');
+            var messageColourInput = document.getElementById('messageColor');
+            var chatBoldInput = document.getElementById('chatBold');
+            var chatItalicInput = document.getElementById('chatItalic');
+
+            var colonColour = colonColourInput ? colonColourInput.value : '#ffffff';
+            var messageColour = messageColourInput ? messageColourInput.value : '#ffffff';
+            var chatBold = chatBoldInput ? !!chatBoldInput.checked : false;
+            var chatItalic = chatItalicInput ? !!chatItalicInput.checked : false;
+
+            var tmp = rawToTmp(raw, {
+                colonColour: colonColour,
+                messageColour: messageColour,
+                chatBold: chatBold,
+                chatItalic: chatItalic,
+                enableExtras: true
+            });
+            tmpOutput.textContent = tmp;
+
+            var editor = document.getElementById('richEditor');
+            var nameHtml = editor ? editor.innerHTML : '';
+            var lastColour = '#FFFFFF';
+            if (editor) {
+                var spans = editor.querySelectorAll('span[style]');
+                if (spans && spans.length) {
+                    var lastSpan = spans[spans.length - 1];
+                    if (lastSpan && lastSpan.style && lastSpan.style.color) {
+                        lastColour = rgbToHex(lastSpan.style.color);
+                    }
+                }
+            }
+            var classBold = chatBold ? 'font-weight:700;' : '';
+            var classItalic = chatItalic ? 'font-style:italic;' : '';
+
+            var safeName = nameHtml;
+            preview.innerHTML = '<span>' + safeName + '</span>' +
+                '<span style="' + classBold + classItalic + 'color:' + colonColour + '">:</span>' +
+                '<span style="' + classBold + classItalic + 'color:' + messageColour + '"> ' + '这是一条示例消息' + '</span>';
+        }
+
         function applyColorToSelection(color) {
             var selection = window.getSelection();
             if (!selection || selection.rangeCount === 0) return;
@@ -519,7 +876,6 @@
             newRange.selectNodeContents(span);
             selection.addRange(newRange);
         }
-
 
         var gradientRange = null;
 
@@ -674,6 +1030,7 @@
             editor.innerHTML = snap.html;
             historyIndex = targetIndex;
             syncEditorToRaw();
+            renderChatPreview();
         }
 
         function syncEditorToRaw() {
@@ -703,34 +1060,94 @@
             var gradientCancel = document.getElementById('gradientCancel');
             var gradientRainbow = document.getElementById('gradientRainbow');
 
+            var colonColor = document.getElementById('colonColor');
+            var messageColor = document.getElementById('messageColor');
+            var chatBold = document.getElementById('chatBold');
+            var chatItalic = document.getElementById('chatItalic');
+            var enableExtras = document.getElementById('enableExtras');
+            var copyTmpBtn = document.getElementById('copyTmpBtn');
+
+            var bgDots = document.querySelectorAll('.bg-dot');
+
+            var dropZone = document.getElementById('dropZone');
+            var playerFileInput = document.getElementById('playerFileInput');
+            var downloadFileBtn = document.getElementById('downloadFileBtn');
+            var resetFileBtn = document.getElementById('resetFileBtn');
+            var fileInfo = document.getElementById('fileInfo');
+            var fileError = document.getElementById('fileError');
+            var oldNameHint = document.getElementById('oldNameHint');
+
+            var loadedFileName = null;
+            var loadedFileContent = null;
+
             var initialRaw =
-                '<#FF00FF>❀</color>' +
-                '<#FF0066>8</color>' +
-                '<#FF3300>8</color>' +
-                '<#FF7A00>8</color>' +
-                '<#FFC400>8</color>' +
-                '<#D4FF00>大</color>' +
-                '<#66FF00>展</color>' +
-                '<#00FF66>宏</color>' +
-                '<#00FFD5>图</color>' +
-                '<#00D5FF>V</color>' +
-                '<#0091FF>I</color>' +
-                '<#4D5BFF>P</color>' +
-                '<#8A3DFF>靓</color>' +
-                '<#C000FF>K</color>' +
-                '<#FF00C8>大</color>' +
-                '<#FF007A>包</color>' +
-                '<#FF00FF>❀</color>';
+                '<#FF0000>O</color>' +
+                '<#FF2D00>n</color>' +
+                '<#FF5A00>-</color>' +
+                '<#FF8700>T</color>' +
+                '<#FFB400>o</color>' +
+                '<#FFE100>g</color>' +
+                '<#E1FF00>e</color>' +
+                '<#87FF00>t</color>' +
+                '<#2DFF00>h</color>' +
+                '<#00FF2D>e</color>' +
+                '<#00FF87>r</color>' +
+                '<#00FFE1> </color>' +
+                '<#00C3FF>富</color>' +
+                '<#0069FF>文</color>' +
+                '<#000FFF>本</color>' +
+                '<#2900FF>编</color>' +
+                '<#5A00FF>辑</color>' +
+                '<#8B00FF>器</color>';
+
 
             if (rawArea) {
                 rawArea.textContent = initialRaw;
             }
             rawToEditor(initialRaw);
             captureSnapshot();
+            renderChatPreview();
+
+            function updateBgDotsActive() {
+                var bg = 'default';
+                try {
+                    bg = localStorage.getItem('ot_preview_bg') || 'default';
+                } catch (e) { }
+
+                if (!bgDots) return;
+                for (var i = 0; i < bgDots.length; i++) {
+                    var el = bgDots[i];
+                    if (!el) continue;
+                    var key = el.getAttribute('data-bg') || '';
+                    if (key === bg) {
+                        el.classList.add('active');
+                    } else {
+                        el.classList.remove('active');
+                    }
+                }
+            }
+
+            updateBgDotsActive();
+
+            if (bgDots && bgDots.length) {
+                for (var i = 0; i < bgDots.length; i++) {
+                    (function (btn) {
+                        btn.addEventListener('click', function () {
+                            var key = btn.getAttribute('data-bg') || 'default';
+                            try {
+                                localStorage.setItem('ot_preview_bg', key);
+                            } catch (e) { }
+                            updateBgDotsActive();
+                            renderChatPreview();
+                        });
+                    })(bgDots[i]);
+                }
+            }
 
             if (editor) {
                 editor.addEventListener('input', function () {
                     captureSnapshot();
+                    renderChatPreview();
                 });
             }
 
@@ -739,6 +1156,7 @@
                     var color = colorPicker.value || '#000000';
                     applyColorToSelection(color);
                     captureSnapshot();
+                    renderChatPreview();
                 });
             }
 
@@ -747,6 +1165,7 @@
                     var raw = rawArea ? rawArea.textContent || '' : '';
                     rawToEditor(raw);
                     captureSnapshot();
+                    renderChatPreview();
                 });
             }
 
@@ -754,6 +1173,50 @@
                 refreshRawBtn.addEventListener('click', function () {
                     syncEditorToRaw();
                     captureSnapshot();
+                    renderChatPreview();
+                });
+            }
+
+            function onPreviewOptionChange() {
+                renderChatPreview();
+            }
+
+            if (colonColor) colonColor.addEventListener('input', onPreviewOptionChange);
+            if (messageColor) messageColor.addEventListener('input', onPreviewOptionChange);
+            if (chatBold) chatBold.addEventListener('change', onPreviewOptionChange);
+            if (chatItalic) chatItalic.addEventListener('change', onPreviewOptionChange);
+
+            if (copyTmpBtn) {
+                copyTmpBtn.addEventListener('click', function () {
+                    var tmpOutput = document.getElementById('tmpOutput');
+                    if (!tmpOutput) return;
+                    var text = tmpOutput.textContent || '';
+
+                    var originalText = copyTmpBtn.textContent;
+                    copyTmpBtn.textContent = '已复制';
+                    copyTmpBtn.disabled = true;
+
+                    function restoreCopyButton() {
+                        copyTmpBtn.textContent = originalText;
+                        copyTmpBtn.disabled = false;
+                    }
+
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).catch(function () { }).finally(function () {
+                            setTimeout(restoreCopyButton, 1000);
+                        });
+                    } else {
+                        var range = document.createRange();
+                        range.selectNodeContents(tmpOutput);
+                        var sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                        try {
+                            document.execCommand('copy');
+                        } catch (e) { }
+                        sel.removeAllRanges();
+                        setTimeout(restoreCopyButton, 1000);
+                    }
                 });
             }
 
@@ -846,6 +1309,7 @@
                     var right = gradientRightColor ? gradientRightColor.value || '#0000ff' : '#0000ff';
                     applyGradientToSelection(left, right);
                     captureSnapshot();
+                    renderChatPreview();
                     closeGradientModal();
                 });
             }
@@ -864,13 +1328,157 @@
                     }
                     applyRainbowToSelection();
                     captureSnapshot();
+                    renderChatPreview();
                     closeGradientModal();
+                });
+            }
+
+            function setFileError(msg) {
+                if (!fileError) return;
+                if (msg) {
+                    fileError.textContent = msg;
+                    fileError.style.display = 'block';
+                } else {
+                    fileError.textContent = '';
+                    fileError.style.display = 'none';
+                }
+            }
+
+            function setFileInfo(msg) {
+                if (!fileInfo) return;
+                if (msg) {
+                    fileInfo.textContent = msg;
+                    fileInfo.style.display = 'block';
+                } else {
+                    fileInfo.textContent = '';
+                    fileInfo.style.display = 'none';
+                }
+            }
+
+            function setOldNameHint(msg) {
+                if (!oldNameHint) return;
+                if (msg) {
+                    oldNameHint.textContent = msg;
+                    oldNameHint.style.display = 'block';
+                } else {
+                    oldNameHint.textContent = '';
+                    oldNameHint.style.display = 'none';
+                }
+            }
+
+            function resetLoadedFile() {
+                loadedFileName = null;
+                loadedFileContent = null;
+                if (playerFileInput) playerFileInput.value = '';
+                if (downloadFileBtn) downloadFileBtn.disabled = true;
+                setFileError('');
+                setFileInfo('');
+                setOldNameHint('');
+            }
+
+            function backfillFromTmpName(tmpName) {
+                var raw = parseTmpNameToRaw(tmpName);
+                if (!raw) return;
+                if (rawArea) rawArea.textContent = raw;
+                rawToEditor(raw);
+                captureSnapshot();
+                syncEditorToRaw();
+                renderChatPreview();
+            }
+
+            function processPlayerFile(file) {
+                resetLoadedFile();
+                if (!file) return;
+                file.text().then(function (text) {
+                    var extracted = extractNameFromPlayerData(text);
+                    if (extracted === null) {
+                        setFileError('未在该文件中找到 Name 字段。');
+                        return;
+                    }
+                    loadedFileName = file.name;
+                    loadedFileContent = text;
+                    setFileInfo('已加载：' + loadedFileName);
+                    setOldNameHint('原 Name：' + extracted);
+                    backfillFromTmpName(extracted);
+                    if (downloadFileBtn) downloadFileBtn.disabled = false;
+                }).catch(function () {
+                    setFileError('读取文件失败。');
+                });
+            }
+
+            if (dropZone && playerFileInput) {
+                dropZone.addEventListener('click', function () {
+                    playerFileInput.click();
+                });
+
+                dropZone.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                    dropZone.classList.add('dragover');
+                });
+                dropZone.addEventListener('dragleave', function () {
+                    dropZone.classList.remove('dragover');
+                });
+                dropZone.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    dropZone.classList.remove('dragover');
+                    var file = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files[0] : null;
+                    if (file) processPlayerFile(file);
+                });
+
+                playerFileInput.addEventListener('change', function (e) {
+                    var file = e.target.files ? e.target.files[0] : null;
+                    if (file) processPlayerFile(file);
+                });
+            }
+
+            if (resetFileBtn) {
+                resetFileBtn.addEventListener('click', function () {
+                    resetLoadedFile();
+                });
+            }
+
+            if (downloadFileBtn) {
+                downloadFileBtn.addEventListener('click', function () {
+                    if (!loadedFileName || !loadedFileContent) {
+                        setFileError('请先加载 PlayerData.txt');
+                        return;
+                    }
+                    var tmpOutput = document.getElementById('tmpOutput');
+                    var generated = tmpOutput ? (tmpOutput.textContent || '') : '';
+                    if (!generated) {
+                        setFileError('TMP 输出为空，无法写入。');
+                        return;
+                    }
+                    var modified = replaceNameInPlayerData(loadedFileContent, generated);
+                    if (modified === null) {
+                        setFileError('写入失败：未找到 Name 字段。');
+                        return;
+                    }
+                    var blob = new Blob([modified], { type: 'text/plain' });
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = loadedFileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    setFileError('');
                 });
             }
         }
 
         document.addEventListener('DOMContentLoaded', init);
     </script>
+
+    <!-- 页脚 -->
+    <footer
+        style="margin-top: 20px; text-align: center; font-size: 12px; color: rgba(106, 77, 83, 0.7); padding: 10px 0;">
+        <p>参考来源：<a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3651157970" target="_blank"
+                style="color: #6a4d53; text-decoration: underline;">Steam 指南</a></p>
+        <p>作者：<a href="https://github.com/ZTMYO" target="_blank"
+                style="color: #6a4d53; text-decoration: underline;">ZTMYO</a></p>
+    </footer>
 </body>
 
 </html>
