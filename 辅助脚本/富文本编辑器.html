@@ -495,6 +495,38 @@
                         <button id="downloadFileBtn" class="btn btn-primary" disabled>下载已修改文件</button>
                     </div>
                 </div>
+
+                <!-- 手动编辑文件说明 -->
+                <div style="margin-top: 15px; border-top: 1px solid rgba(106, 77, 83, 0.2); padding-top: 10px;">
+                    <div style="font-weight:600; font-size:13px; margin-bottom: 8px;">手动编辑文件</div>
+                    <ol class="list-decimal list-inside space-y-2"
+                        style="font-size:12px; color: rgba(106, 77, 83, 0.9);">
+                        <li>完全关闭游戏。</li>
+                        <li>导航到以下路径的PlayerData.txt文件：
+                            <div class="mt-2 ml-5 space-y-2">
+                                <div>
+                                    <span style="font-weight:500;">Windows:</span>
+                                    <code
+                                        style="margin-left: 8px; background: rgba(106, 77, 83, 0.1); padding: 2px 4px; border-radius: 4px; font-size: 11px; word-break: break-all;">C:\Users\USERNAME\AppData\LocalLow\GigaPuff\On-Together\PlayerData.txt</code>
+                                </div>
+                                <div>
+                                    <span style="font-weight:500;">Mac:</span>
+                                    <code
+                                        style="margin-left: 8px; background: rgba(106, 77, 83, 0.1); padding: 2px 4px; border-radius: 4px; font-size: 11px; word-break: break-all;">~/Library/Application Support/com.GigaPuff.On-Together/PlayerData.txt</code>
+                                </div>
+                            </div>
+                        </li>
+                        <li>备份文件（例如复制为PlayerData-backup.txt）。</li>
+                        <li>用文本编辑器打开文件，找到"Name"字段。它看起来类似这样：
+                            <div class="mt-2 ml-5">
+                                <code
+                                    style="background: rgba(106, 77, 83, 0.1); padding: 4px 6px; border-radius: 4px; font-size: 11px;">"Name":"你当前的名称"</code>
+                            </div>
+                        </li>
+                        <li>将值（例如上面示例中的 YourCurrentName）替换为"TMP 输出"部分中的代码。</li>
+                        <li>保存文件并启动游戏。</li>
+                    </ol>
+                </div>
             </div>
         </div>
     </div>
