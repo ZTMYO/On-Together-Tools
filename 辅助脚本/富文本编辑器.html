@@ -281,6 +281,32 @@
             word-break: break-word;
         }
 
+        /* 简约滚动条 */
+        .mono-box::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .mono-box::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 3px;
+        }
+
+        .mono-box::-webkit-scrollbar-thumb {
+            background: rgba(106, 77, 83, 0.4);
+            border-radius: 3px;
+        }
+
+        .mono-box::-webkit-scrollbar-thumb:hover {
+            background: rgba(106, 77, 83, 0.6);
+        }
+
+        /* Firefox */
+        .mono-box {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(106, 77, 83, 0.4) rgba(0, 0, 0, 0.05);
+        }
+
         .modal-mask {
             position: fixed;
             inset: 0;
@@ -396,6 +422,9 @@
                         <input id="colorPicker" type="color" value="#ff00ff" />
                     </label>
                     <button id="gradientBtn" class="btn">渐变</button>
+                    <!-- 新增粗体/斜体按钮 -->
+                    <button id="boldBtn" class="btn">粗体</button>
+                    <button id="italicBtn" class="btn">斜体</button>
                     <button id="undoBtn" class="btn">撤销</button>
                     <button id="redoBtn" class="btn">重做</button>
                 </div>
@@ -592,15 +621,27 @@
 
             var result = '';
             var currentColor = null;
+            var currentBold = false;
+            var currentItalic = false;
             var buffer = '';
 
             function flushBuffer() {
                 if (!buffer) return;
-                if (currentColor === null) {
-                    result += buffer;
-                } else {
-                    result += '<' + currentColor + '>' + buffer + '</color>';
+                var prefix = '';
+                var suffix = '';
+                if (currentBold) {
+                    prefix += '<b>';
+                    suffix = '</b>' + suffix;
                 }
+                if (currentItalic) {
+                    prefix += '<i>';
+                    suffix = '</i>' + suffix;
+                }
+                if (currentColor !== null) {
+                    prefix += '<' + currentColor + '>';
+                    suffix = '</color>' + suffix;
+                }
+                result += prefix + buffer + suffix;
                 buffer = '';
             }
 
@@ -610,19 +651,26 @@
 
                 var parentEl = node.parentElement;
                 var color = null;
+                var bold = false;
+                var italic = false;
                 if (parentEl) {
-                    var styleColor = window.getComputedStyle(parentEl).color;
+                    var computed = window.getComputedStyle(parentEl);
+                    var styleColor = computed.color;
                     var hex = rgbToHex(styleColor);
                     if (hex === '#000000') {
                         color = null;
                     } else {
                         color = hex;
                     }
+                    bold = (computed.fontWeight && (computed.fontWeight === 'bold' || parseInt(computed.fontWeight, 10) >= 600));
+                    italic = (computed.fontStyle && computed.fontStyle === 'italic');
                 }
 
-                if (color !== currentColor) {
+                if (color !== currentColor || bold !== currentBold || italic !== currentItalic) {
                     flushBuffer();
                     currentColor = color;
+                    currentBold = bold;
+                    currentItalic = italic;
                 }
 
                 buffer += node.nodeValue;
@@ -639,62 +687,18 @@
 
             if (!raw) return;
 
-            var i = 0;
-            var len = raw.length;
+            // escape everything first then unescape allowed tags
+            var safe = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            // color tags -> span
+            safe = safe.replace(/&lt;#([0-9a-fA-F]{6})&gt;/g, '<span style="color:#$1">');
+            safe = safe.replace(/&lt;\/color&gt;/g, '</span>');
+            // style tags allowed
+            safe = safe.replace(/&lt;b&gt;/g, '<b>');
+            safe = safe.replace(/&lt;\/b&gt;/g, '</b>');
+            safe = safe.replace(/&lt;i&gt;/g, '<i>');
+            safe = safe.replace(/&lt;\/i&gt;/g, '</i>');
 
-            function appendText(text, color) {
-                if (!text) return;
-                if (color) {
-                    var span = document.createElement('span');
-                    span.textContent = text;
-                    span.style.color = color;
-                    editor.appendChild(span);
-                } else {
-                    editor.appendChild(document.createTextNode(text));
-                }
-            }
-
-            while (i < len) {
-                var idx = raw.indexOf('<#', i);
-                if (idx === -1) {
-                    appendText(raw.substring(i), null);
-                    break;
-                }
-
-                if (idx > i) {
-                    appendText(raw.substring(i, idx), null);
-                }
-
-                // 颜色格式：<#RRGGBB>
-                var start = idx + 1; // 指向 '#' 位置
-                var colorEnd = raw.indexOf('>', start);
-                if (colorEnd === -1) {
-                    appendText(raw.substring(idx), null);
-                    break;
-                }
-
-                var colorSpec = raw.substring(start, colorEnd).trim();
-                var colorHex = colorSpec;
-
-                if (!/^#[0-9a-fA-F]{6}$/.test(colorHex)) {
-                    appendText(raw.substring(idx, colorEnd + 1), null);
-                    i = colorEnd + 1;
-                    continue;
-                }
-
-                var closeTag = '</color>';
-                var closeIdx = raw.indexOf(closeTag, colorEnd + 1);
-                if (closeIdx === -1) {
-                    var textRest = raw.substring(colorEnd + 1);
-                    appendText(textRest, colorHex.toUpperCase());
-                    break;
-                }
-
-                var textContent = raw.substring(colorEnd + 1, closeIdx);
-                appendText(textContent, colorHex.toUpperCase());
-
-                i = closeIdx + closeTag.length;
-            }
+            editor.innerHTML = safe;
         }
 
         function escapeForTmp(text) {
@@ -1092,6 +1096,9 @@
             var gradientCancel = document.getElementById('gradientCancel');
             var gradientRainbow = document.getElementById('gradientRainbow');
 
+            var boldBtn = document.getElementById('boldBtn');
+            var italicBtn = document.getElementById('italicBtn');
+
             var colonColor = document.getElementById('colonColor');
             var messageColor = document.getElementById('messageColor');
             var chatBold = document.getElementById('chatBold');
@@ -1187,6 +1194,22 @@
                 colorPicker.addEventListener('input', function () {
                     var color = colorPicker.value || '#000000';
                     applyColorToSelection(color);
+                    captureSnapshot();
+                    renderChatPreview();
+                });
+            }
+
+            // 粗体和斜体按钮行为
+            if (boldBtn) {
+                boldBtn.addEventListener('click', function () {
+                    document.execCommand('bold');
+                    captureSnapshot();
+                    renderChatPreview();
+                });
+            }
+            if (italicBtn) {
+                italicBtn.addEventListener('click', function () {
+                    document.execCommand('italic');
                     captureSnapshot();
                     renderChatPreview();
                 });
